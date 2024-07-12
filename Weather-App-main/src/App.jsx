@@ -1,38 +1,6 @@
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-// import './App.css'
 
-// function App() {
-//   const [count, setCount] = useState(0)
 
-//   return (
-//     <>
-//       <div>
-//         <a href="https://vitejs.dev" target="_blank">
-//           <img src={viteLogo} className="logo" alt="Vite logo" />
-//         </a>
-//         <a href="https://react.dev" target="_blank">
-//           <img src={reactLogo} className="logo react" alt="React logo" />
-//         </a>
-//       </div>
-//       <h1>Vite + React</h1>
-//       <div className="card">
-//         <button onClick={() => setCount((count) => count + 1)}>
-//           count is {count}
-//         </button>
-//         <p>
-//           Edit <code>src/App.jsx</code> and save to test HMR
-//         </p>
-//       </div>
-//       <p className="read-the-docs">
-//         Click on the Vite and React logos to learn more
-//       </p>
-//     </>
-//   )
-// }
 
-// export default App
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -40,11 +8,16 @@ import './App.css';
 import WeatherInfo from './WeatherInfo';
 import HistoricalWeather from './HistoricalWeather';
 import ForecastWeather from './ForecastWeather';
+import MonthlyTemperatureGraph from './MonthlyTemperatureGraph';
+import Login from './Login';
+import { auth } from './firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 const API_KEY = 'edbb32933912451599c150403240807';
 const defaultIcon = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQa2tODZaOmYQ7jPArUXx_26CkDKzxdDWqdzA&s';
 
 function App() {
+  const [user] = useAuthState(auth);
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -76,7 +49,7 @@ function App() {
       axios.get(`http://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${city}&days=5`),
       ...getPreviousDates(3).map(date =>
         axios.get(`http://api.weatherapi.com/v1/history.json?key=${API_KEY}&q=${city}&dt=${date}`)
-      )
+      ),
     ])
       .then(responses => {
         setWeather(responses[0].data);
@@ -117,53 +90,74 @@ function App() {
     }
   };
 
+  // Example data for monthly temperature (replace with actual data)
+  const monthlyTemperatureData = [
+    { month: 'January', avgTemp: 5 },
+    { month: 'February', avgTemp: 7 },
+    { month: 'March', avgTemp: 10 },
+    { month: 'April', avgTemp: 15 },
+    { month: 'May', avgTemp: 20 },
+    { month: 'June', avgTemp: 25 },
+    { month: 'July', avgTemp: 30 },
+    { month: 'August', avgTemp: 28 },
+    { month: 'September', avgTemp: 25 },
+    { month: 'October', avgTemp: 20 },
+    { month: 'November', avgTemp: 15 },
+    { month: 'December', avgTemp: 10 },
+  ];
+
   return (
     <div className="App">
-      <div className="date-display">{currentDate}</div>
+      {user ? (
+        <>
+          <div className="date-display">{currentDate}</div>
 
-      <div className="search-bar">
-        <input
-          type="text"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder="Enter city name"
-          className="search-input"
-        />
-        <button className="search-button" onClick={fetchWeatherData}>
-          Search
-        </button>
-        <div className="toggle-unit">
-          <div className={`toggle ${unit === 'F' ? 'active' : ''}`} onClick={toggleUnit}>
-            <div className="toggle-ball"></div>
-            <span>{unit === 'C' ? 'Celsius' : 'Fahrenheit'}</span>
+          <div className="search-bar">
+            <input
+              type="text"
+              value={city}
+              onChange={e => setCity(e.target.value)}
+              placeholder="Enter city name"
+              className="search-input"
+            />
+            <button className="search-button" onClick={fetchWeatherData}>
+              Search
+            </button>
+            <div className="toggle-unit">
+              <div className={`toggle ${unit === 'F' ? 'active' : ''}`} onClick={toggleUnit}>
+                <div className="toggle-ball"></div>
+                <span>{unit === 'C' ? 'Celsius' : 'Fahrenheit'}</span>
+              </div>
+            </div>
+            <div className="toggle-forecast">
+              <div className={`toggle ${showForecast ? 'active' : ''}`} onClick={toggleShowForecast}>
+                <div className="toggle-ball"></div>
+                <span>{showForecast ? 'Forecast' : 'Historical'}</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="toggle-forecast">
-          <div className={`toggle ${showForecast ? 'active' : ''}`} onClick={toggleShowForecast}>
-            <div className="toggle-ball"></div>
-            <span>{showForecast ? 'Forecast' : 'Historical'}</span>
+
+          {loading && <div>Loading...</div>}
+          {error && <div>Error: {error.message}</div>}
+          <div className="side">
+            {weather && <WeatherInfo weather={weather} unit={unit} getWeatherIcon={getWeatherIcon} />}
+            <div className="sidepart">
+              {!showForecast && historical.length > 0 && (
+                <HistoricalWeather historical={historical} unit={unit} getWeatherIcon={getWeatherIcon} />
+              )}
+
+              {showForecast && forecast.length > 0 && (
+                <ForecastWeather forecast={forecast} unit={unit} getWeatherIcon={getWeatherIcon} />
+              )}
+            </div>
+            {weather && <MonthlyTemperatureGraph monthlyData={monthlyTemperatureData} unit={unit} />}
           </div>
-        </div>
-      </div>
-
-      {loading && <div>Loading...</div>}
-      {error && <div>Error: {error.message}</div>}
-      <div className='side'>
-
-        {weather && <WeatherInfo weather={weather} unit={unit} getWeatherIcon={getWeatherIcon} />}
-        <div className='sidepart'>
-          {!showForecast && historical.length > 0 && (
-            <HistoricalWeather historical={historical} unit={unit} getWeatherIcon={getWeatherIcon} />
-          )}
-
-          {showForecast && forecast.length > 0 && (
-            <ForecastWeather forecast={forecast} unit={unit} getWeatherIcon={getWeatherIcon} />
-          )}
-        </div>
-      </div>
+        </>
+      ) : (
+        <Login />
+      )}
     </div>
   );
 }
 
 export default App;
-
