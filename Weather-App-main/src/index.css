@@ -149,7 +149,7 @@ button:focus-visible {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .date-display {
     font-size: 24px;
   }
@@ -164,4 +164,4 @@ button:focus-visible {
     width: 90%;
     margin: 5px 0;
   }
-}
+} */
